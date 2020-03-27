@@ -1,2 +1,5 @@
 # SDL-Programming
-SDL Framework programming
+
+SDL Framework
+
+Programming using the C++ and SDL library. 
