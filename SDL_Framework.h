@@ -8,6 +8,75 @@
 #include <cmath>
 #include <random>
 
+class Vector2D
+{
+private:
+    float mX;
+    float mY;
+
+public:
+    Vector2D() : mX(0), mY(0) {}
+    Vector2D(float x, float y) : mX(x), mY(y) {}
+    Vector2D(double x, double y) : mX((float)x), mY((float)y) {}
+    Vector2D(int x, int y) : mX((float)x), mY((float)y) {}
+
+    float GetX() { return mX; }
+    float GetY() { return mY; }
+
+    int GetIntX() { return (int)mX; }
+    int GetIntY() { return (int)mY; }
+
+    void SetX(float x) { mX = x; }
+    void SetY(float y) { mY = y; }
+
+    Vector2D operator+(const Vector2D& v2) const
+    {
+        return Vector2D(mX + v2.mX, mY + v2.mY);
+    }
+
+    friend Vector2D& operator+=(Vector2D& v1, const Vector2D& v2)
+    {
+        v1.mX += v2.mX;
+        v1.mY += v2.mY;
+        return v1;
+    }
+
+    Vector2D operator*(float scalar)
+    {
+        return Vector2D(mX * scalar, mY * scalar);
+    }
+
+    Vector2D& operator*=(float scalar)
+    {
+        mX *= scalar;
+        mY *= scalar;
+        return *this;
+    }
+
+    Vector2D operator-(const Vector2D& v2) const
+    {
+        return Vector2D(mX - v2.mX, mY - v2.mY);
+    }
+
+    friend Vector2D& operator-=(Vector2D& v1, const Vector2D& v2)
+    {
+        v1.mX -= v2.mX;
+        v1.mY -= v2.mY;
+    }
+
+    Vector2D operator/(float scalar)
+    {
+        return Vector2D(mX / scalar, mY / scalar);
+    }
+
+    Vector2D& operator/=(float scalar)
+    {
+        mX /= scalar;
+        mY /= scalar;
+        return *this;
+    }
+};
+
 class SDL_Framework
 {
 private:
@@ -21,8 +90,11 @@ private:
     int mWindowWidth = 0;
     int mWindowHeight = 0;
 
+    const int FPS = 60;
+    const Uint32 DELAY_TIME = (Uint32)(1000.0f / FPS);
+
 public:
-    enum mouse_buttons
+    enum MOUSE_BUTTONS
     {
         LEFT = 0,
         MIDDLE = 1,
@@ -36,30 +108,30 @@ public:
         mMouseButtonStates.push_back(false);
     }
 
-    virtual bool user_render(int elapsedTime) { if (elapsedTime) return true; return true; };
-    virtual bool user_init() { return true; };
-    virtual void user_clean() {};
+    virtual bool UserInit() { return true; };
+    virtual bool UserRender(int elapsed_time) { if (elapsed_time) return true; return true; };
+    virtual void UserClean() {};
 
-    int SDL_Framework::window_width() { return mWindowWidth; }
-    int SDL_Framework::window_height() { return mWindowHeight; }
+    int SDL_Framework::WindowWidth() { return mWindowWidth; }
+    int SDL_Framework::WindowHeight() { return mWindowHeight; }
     SDL_Renderer* SDL_Framework::renderer() { return mRenderer; }
 
-    SDL_Keycode pressed_key()
+    SDL_Keycode PressedKey()
     {
         return mPressedKey;
     }
 
-    SDL_Point mouse_position()
+    SDL_Point MousePosition()
     {
         return mMousePosition;
     }
 
-    bool is_mouse_button_pressed(enum mouse_buttons mouse_button)
+    bool IsMouseButtonPressed(enum MOUSE_BUTTONS mouse_button)
     {
         return mMouseButtonStates[mouse_button];
     };
 
-    bool init(const char* title, int xpos, int ypos, int width, int height, int flags)
+    bool init(const char* title, int x, int y, int width, int height, int flags)
     {
         int result = SDL_Init(SDL_INIT_EVERYTHING);
         if (result != 0)
@@ -70,15 +142,17 @@ public:
         }
 
         mWindowTitle = title;
-        mWindowWidth = width;
-        mWindowHeight = height;
 
-        mWindow = SDL_CreateWindow(title, xpos, ypos, width, height, flags);
+        mWindow = SDL_CreateWindow(title, x, y, width, height, flags);
         if (mWindow == 0) {
             std::cout << "SDL_CreateWindow failed.\n";
             std::getchar();
             return false;
         }
+
+        SDL_GetWindowSize(mWindow, &mWindowWidth, &mWindowHeight);
+        if (mWindowWidth <= 0) mWindowWidth = 1;
+        if (mWindowHeight <= 0) mWindowHeight = 1;
 
         mRenderer = SDL_CreateRenderer(mWindow, -1, 0);
         if (mRenderer == 0) {
@@ -87,24 +161,25 @@ public:
             return false;
         }
 
-        mIsRunning = user_init();
+        mIsRunning = UserInit();
 
         return mIsRunning;
     }
 
-    void run()
+    void Run()
     {
-        Uint32 startTime = SDL_GetTicks();
-        Uint32 timer = startTime;
+        Uint32 start_time = SDL_GetTicks();
+        Uint32 timer = start_time;
         int frame_count = 0;
 
         while (mIsRunning) {
-            Uint32 frameStart = SDL_GetTicks();
-            Uint32 elapsedTime = frameStart - startTime;
-            startTime = frameStart;
+            Uint32 frame_start = SDL_GetTicks();
+            Uint32 elapsed_time = frame_start - start_time;
+            start_time = frame_start;
 
             handle_events();
-            user_render(elapsedTime);
+            UserRender(elapsed_time);
+            SDL_RenderPresent(renderer());
 
             frame_count++;
             if (SDL_GetTicks() - timer > 1000) {
@@ -116,16 +191,22 @@ public:
                 timer += 1000;
                 frame_count = 0;
             }
+
+            Uint32 frame_time = SDL_GetTicks() - frame_start;
+            if (frame_time < DELAY_TIME)
+            {
+                SDL_Delay((int)(DELAY_TIME - frame_time));
+            }
         }
 
-        user_clean();
+        UserClean();
 
         SDL_DestroyWindow(mWindow);
         SDL_DestroyRenderer(mRenderer);
         SDL_Quit();
     }
 
-    void draw_circle(SDL_Point center, int radius, SDL_Color color, bool fill)
+    void DrawCircle(SDL_Point center, int radius, SDL_Color color, bool fill)
     {
         int radius2 = radius * radius;
 
@@ -137,7 +218,7 @@ public:
                 int dx = radius - w;
                 int dy = radius - h;
                 int pos = dx * dx + dy * dy;
-                if (fill && pos < radius2)
+                if (fill && pos <= radius2)
                 {
                     SDL_RenderDrawPoint(mRenderer, center.x + dx, center.y + dy);
                 }
