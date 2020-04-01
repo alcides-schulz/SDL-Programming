@@ -1,12 +1,9 @@
-#include "SDL.h"
-
-
 #include "SDL_Framework.h"
 
-constexpr uint32_t g_starColours[8] =
+constexpr SDL_Color STAR_COLORS[8] =
 {
-    0xFFFFFFFF, 0xFFD9FFFF, 0xFFA3FFFF, 0xFFFFC8C8,
-    0xFFFFCB9D, 0xFF9F9FFF, 0xFF415EFF, 0xFF28199D
+    {0xFF, 0xFF, 0xFF, 0xFF}, {0xFF, 0xFF, 0xD9, 0xFF}, {0xFF, 0xFF, 0xA3, 0xFF}, {0xC8, 0xC8, 0xFF, 0xFF},
+    {0x9D, 0xCB, 0xFF, 0xFF}, {0xFF, 0x9F, 0x9F, 0xFF}, {0xFF, 0x5E, 0x41, 0xFF}, {0x9D, 0x19, 0x28, 0xFF}
 };
 
 struct sPlanet
@@ -20,39 +17,46 @@ struct sPlanet
     double temperature = 0.0;
     double population = 0.0;
     bool ring = false;
-    std::vector<double> vMoons;
+    std::vector<double> moons;
 };
 
-class cStarSystem
+class StarSystem
 {
 public:
-    cStarSystem(uint32_t x, uint32_t y, bool bGenerateFullSystem = false)
+    std::vector<sPlanet> mPlanets;
+    bool		mStarExists = false;
+    double		mStarDiameter = 0.0f;
+    SDL_Color	mStarColor;
+
+    StarSystem(uint32_t x, uint32_t y, bool generate_full_system = false)
     {
-        nProcGen = (x & 0xFFFF) << 16 | (y & 0xFFFF);
+        mProcGenSeed = (x & 0xFFFF) << 16 | (y & 0xFFFF);
 
-        starExists = (rndInt(0, 20) == 1);
-        if (!starExists) return;
+        mStarExists = (GetRandomInt(0, 20) == 1);
+        if (!mStarExists) return;
 
-        starDiameter = rndDouble(10.0, 40.0);
-        starColour = g_starColours[rndInt(0, 8)];
+        mStarDiameter = GetRandomDouble(10.0, 40.0);
+        mStarColor = STAR_COLORS[GetRandomInt(0, 8)];
 
-        if (!bGenerateFullSystem) return;
+        if (!generate_full_system) return;
 
-        double dDistanceFromStar = rndDouble(60.0, 200.0);
-        int nPlanets = rndInt(0, 10);
-        for (int i = 0; i < nPlanets; i++)
+        double distance_from_star = GetRandomDouble(60.0, 200.0);
+
+        int max_planets = GetRandomInt(0, 10);
+
+        for (int i = 0; i < max_planets; i++)
         {
             sPlanet p;
-            p.distance = dDistanceFromStar;
-            dDistanceFromStar += rndDouble(20.0, 200.0);
-            p.diameter = rndDouble(4.0, 20.0);
+            p.distance = distance_from_star;
+            distance_from_star += GetRandomDouble(20.0, 200.0);
+            p.diameter = GetRandomDouble(4.0, 20.0);
 
-            p.temperature = rndDouble(-200.0, 300.0);
+            p.temperature = GetRandomDouble(-200.0, 300.0);
 
-            p.foliage = rndDouble(0.0, 1.0);
-            p.minerals = rndDouble(0.0, 1.0);
-            p.gases = rndDouble(0.0, 1.0);
-            p.water = rndDouble(0.0, 1.0);
+            p.foliage = GetRandomDouble(0.0, 1.0);
+            p.minerals = GetRandomDouble(0.0, 1.0);
+            p.gases = GetRandomDouble(0.0, 1.0);
+            p.water = GetRandomDouble(0.0, 1.0);
 
             double dSum = 1.0 / (p.foliage + p.minerals + p.gases + p.water);
             p.foliage *= dSum;
@@ -60,51 +64,44 @@ public:
             p.gases *= dSum;
             p.water *= dSum;
 
-            p.population = std::max(rndInt(-5000000, 20000000), 0);
+            p.population = std::max(GetRandomInt(-5000000, 20000000), 0);
 
-            p.ring = rndInt(0, 10) == 1;
+            p.ring = GetRandomInt(0, 10) == 1;
 
-            int nMoons = std::max(rndInt(-5, 5), 0);
-            for (int n = 0; n < nMoons; n++)
+            int max_moons = std::max(GetRandomInt(-5, 5), 0);
+            for (int n = 0; n < max_moons; n++)
             {
-                p.vMoons.push_back(rndDouble(1.0, 5.0));
+                p.moons.push_back(GetRandomDouble(1.0, 5.0));
             }
 
-            vPlanets.push_back(p);
+            mPlanets.push_back(p);
         }
     }
 
-    ~cStarSystem()
+    ~StarSystem()
     {
 
     }
 
-public:
-    std::vector<sPlanet> vPlanets;
-
-public:
-    bool		starExists = false;
-    double		starDiameter = 0.0f;
-    uint32_t	starColour = 0xFFFFFFFF;
 
 private:
-    uint32_t nProcGen = 0;
+    uint32_t mProcGenSeed = 0;
 
-    double rndDouble(double min, double max)
+    double GetRandomDouble(double min, double max)
     {
-        return ((double)rnd() / (double)(0x7FFFFFFF)) * (max - min) + min;
+        return ((double)GetRandom() / (double)(0x7FFFFFFF)) * (max - min) + min;
     }
 
-    int rndInt(int min, int max)
+    int GetRandomInt(int min, int max)
     {
-        return (rnd() % (max - min)) + min;
+        return (GetRandom() % (max - min)) + min;
     }
 
-    uint32_t rnd()
+    uint32_t GetRandom()
     {
-        nProcGen += 0xe120fc15;
+        mProcGenSeed += 0xe120fc15;
         uint64_t tmp;
-        tmp = (uint64_t)nProcGen * 0x4a39b70d;
+        tmp = (uint64_t)mProcGenSeed * 0x4a39b70d;
         uint32_t m1 = (uint32_t)((tmp >> 32) ^ tmp);
         tmp = (uint64_t)m1 * 0x12fad5c9;
         uint32_t m2 = (uint32_t)((tmp >> 32) ^ tmp);
@@ -112,72 +109,68 @@ private:
     }
 };
 
-SDL_Point mGalaxyOffset = { 0,0 };
-
-bool mStarSelected = false;
-
-uint32_t nSelectedStarSeed1 = 0;
-uint32_t nSelectedStarSeed2 = 0;
 
 class SDL_UniverseProceduralGeneration : public SDL_Framework
 {
-public:
-    bool user_init() override
-    {
-        return true;
-    }
 
-    bool user_render(int elapsed_time) override
+private:
+
+    SDL_Point mGalaxyOffset = { 0,0 };
+
+    bool mStarSelected = false;
+
+    uint32_t nSelectedStarSeed1 = 0;
+    uint32_t nSelectedStarSeed2 = 0;
+
+public:
+
+    bool UserRender(int elapsed_time) override
     {
         SDL_SetRenderDrawColor(renderer(), 0, 0, 0, 0); // black color
         SDL_RenderClear(renderer());
 
-        if (pressed_key() == SDLK_w) mGalaxyOffset.y -= 50;
-        if (pressed_key() == SDLK_s) mGalaxyOffset.y += 50;
-        if (pressed_key() == SDLK_a) mGalaxyOffset.x -= 50;
-        if (pressed_key() == SDLK_d) mGalaxyOffset.x += 50;
+        if (PressedKey() == SDLK_w) mGalaxyOffset.y -= 50;
+        if (PressedKey() == SDLK_s) mGalaxyOffset.y += 50;
+        if (PressedKey() == SDLK_a) mGalaxyOffset.x -= 50;
+        if (PressedKey() == SDLK_d) mGalaxyOffset.x += 50;
 
         //std::cout << "(" << mGalaxyOffset.x << "," << mGalaxyOffset.y << ")\n";
 
-        int nSectorsX = window_width() / 16;
-        int nSectorsY = window_height() / 16;
+        int sectors_x = WindowWidth() / 16;
+        int sectors_y = WindowHeight() / 16;
 
-        SDL_Point vMouse = { mouse_position().x / 16 , mouse_position().y / 16 };
+        SDL_Point vMouse = { MousePosition().x / 16 , MousePosition().y / 16 };
 
-        for (int vScreenSectorX = 0; vScreenSectorX < nSectorsX; vScreenSectorX++) {
+        for (int screen_sector_x = 0; screen_sector_x < sectors_x; screen_sector_x++) {
 
-            for (int vScreenSectorY = 0; vScreenSectorY < nSectorsY; vScreenSectorY++) {
+            for (int screen_sector_y = 0; screen_sector_y < sectors_y; screen_sector_y++) {
 
-                uint32_t seed1 = mGalaxyOffset.x + vScreenSectorX;
-                uint32_t seed2 = mGalaxyOffset.y + vScreenSectorY;
+                uint32_t seed1 = mGalaxyOffset.x + screen_sector_x;
+                uint32_t seed2 = mGalaxyOffset.y + screen_sector_y;
 
-                cStarSystem star(seed1, seed2);
-                if (star.starExists)
+                StarSystem star(seed1, seed2);
+                if (star.mStarExists)
                 {
-                    SDL_Point p = { vScreenSectorX * 16 + 8, vScreenSectorY * 16 + 8 };
-                    SDL_Color c;
-                    c.a = 0;
-                    c.r = (star.starColour & 0xFF000000) >> 24;
-                    c.g = (star.starColour & 0x00FF0000) >> 16;
-                    c.b = (star.starColour & 0x0000FF00) >> 8;
-                    draw_circle(p, (int)star.starDiameter / 8, c, true);
+                    SDL_Point p = { screen_sector_x * 16 + 8, screen_sector_y * 16 + 8 };
+                    
+                    DrawCircle(p, (int)star.mStarDiameter / 8, star.mStarColor, true);
 
-                    if (vMouse.x == vScreenSectorX && vMouse.y == vScreenSectorY) {
-                        p.x = vScreenSectorX * 16 + 8;
-                        p.y = vScreenSectorY * 16 + 8;
-                        draw_circle(p, 12, { 255,255,255,255 }, false);
+                    if (vMouse.x == screen_sector_x && vMouse.y == screen_sector_y) {
+                        p.x = screen_sector_x * 16 + 8;
+                        p.y = screen_sector_y * 16 + 8;
+                        DrawCircle(p, 12, { 255,255,255,255 }, false);
                     }
                 }
             }
         }
 
-        if (is_mouse_button_pressed(LEFT))
+        if (IsMouseButtonPressed(LEFT))
         {
             uint32_t seed1 = mGalaxyOffset.x + vMouse.x;
             uint32_t seed2 = mGalaxyOffset.y + vMouse.y;
 
-            cStarSystem star(seed1, seed2);
-            if (star.starExists)
+            StarSystem star(seed1, seed2);
+            if (star.mStarExists)
             {
                 mStarSelected = true;
                 nSelectedStarSeed1 = seed1;
@@ -189,58 +182,46 @@ public:
 
         if (mStarSelected)
         {
-            cStarSystem star(nSelectedStarSeed1, nSelectedStarSeed2, true);
+            StarSystem star(nSelectedStarSeed1, nSelectedStarSeed2, true);
 
             SDL_SetRenderDrawColor(renderer(), 0, 0, 128, 0); // dark blue color
-            SDL_Rect r = { 8, window_height() - 232, 550, 232 };
+            SDL_Rect r = { 8, WindowHeight() - 232, 550, 232 };
             SDL_RenderFillRect(renderer(), &r);
             SDL_SetRenderDrawColor(renderer(), 255, 255, 255, 0); // white color
             SDL_RenderDrawRect(renderer(), &r);
 
-            SDL_Point vBody = { 14, window_height() - 232 / 2 };
+            SDL_Point body = { 14, WindowHeight() - 232 / 2 };
 
-            vBody.x += (int)(star.starDiameter * 1.375);
-            SDL_Color c;
-            c.a = 0;
-            c.r = (star.starColour & 0xFF000000) >> 24;
-            c.g = (star.starColour & 0x00FF0000) >> 16;
-            c.b = (star.starColour & 0x0000FF00) >> 8;
-            draw_circle(vBody, (int)(star.starDiameter * 1.375), c, true);
-            vBody.x += (int)((star.starDiameter * 1.375) + 8);
+            body.x += (int)(star.mStarDiameter * 1.375);
+            DrawCircle(body, (int)(star.mStarDiameter * 1.375), star.mStarColor, true);
+            body.x += (int)((star.mStarDiameter * 1.375) + 8);
 
-            for (auto& planet : star.vPlanets)
+            for (auto& planet : star.mPlanets)
             {
-                if (vBody.x + planet.diameter >= 496) break;
+                if (body.x + planet.diameter >= 496) break;
 
-                vBody.x += (int)planet.diameter;
-                draw_circle(vBody, (int)(planet.diameter * 1.0), { 255, 0, 0, 0 }, true); // red
+                body.x += (int)planet.diameter;
+                DrawCircle(body, (int)(planet.diameter * 1.0), { 255, 0, 0, 0 }, true); // red
 
                 if (planet.ring) {
-                    draw_circle(vBody, (int)(planet.diameter * 1.0 + 5), { 255, 255, 255, 255 }, false);// white
+                    DrawCircle(body, (int)(planet.diameter * 1.0 + 5), { 255, 255, 255, 255 }, false);// white
                 }
 
-                SDL_Point vMoon = { vBody.x, vBody.y };
-                vMoon.y += (int)(planet.diameter + 10);
+                SDL_Point moon_position = { body.x, body.y };
+                moon_position.y += (int)(planet.diameter + 10);
 
-                for (auto& moon : planet.vMoons)
+                for (auto& moon : planet.moons)
                 {
-                    vMoon.y += (int)moon;
-                    draw_circle(vMoon, (int)moon, { 192, 192, 192, 0 }, true); // gray
-                    vMoon.y += (int)(moon + 10);
+                    moon_position.y += (int)moon;
+                    DrawCircle(moon_position, (int)moon, { 192, 192, 192, 0 }, true); // gray
+                    moon_position.y += (int)(moon + 10);
                 }
 
-                vBody.x += (int)(planet.diameter + 8);
+                body.x += (int)(planet.diameter + 8);
             }
         }
 
-        SDL_RenderPresent(renderer());
-
         return true;
-    }
-
-    void user_clean() override
-    {
-
     }
 };
 
@@ -249,7 +230,7 @@ int main(int argc, char* argv[])
     SDL_UniverseProceduralGeneration universe;
 
     if (universe.init("Universe Procedural Generation", 400, 100, 1200, 800, 0)) {
-        universe.run();
+        universe.Run();
     }
 
     return 0;
