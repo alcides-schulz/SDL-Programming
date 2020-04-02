@@ -3,7 +3,7 @@ Procedural Generation Example
 Based on https://www.youtube.com/watch?v=ZZY9YE7rZJw
 
 This project shows how to generate parts of a world based on a certain number (seed). In this specfic example we simulate sectors of a universe with stars, and each star can have multiple planets and moons. Those properties are generated on demand. 
-You can navigate to different sectors by using W, A, S, D keys.
+You can navigate to different sectors by using W, A, S, D keys. Clicking in one of the circles on screen (stars) it shows a box with the star planets and moons.
 Can be very usefull to generate game worlds.
 
 Couple of things learned in this project:
