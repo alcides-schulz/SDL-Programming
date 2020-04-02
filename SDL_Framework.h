@@ -91,7 +91,7 @@ private:
     int mWindowHeight = 0;
 
     const int FPS = 60;
-    const Uint32 DELAY_TIME = (Uint32)(1000.0f / FPS);
+    const Uint32 MAX_FRAME_TIME = (Uint32)(1000.0f / FPS);
 
 public:
     enum MOUSE_BUTTONS
@@ -116,22 +116,13 @@ public:
     int SDL_Framework::WindowHeight() { return mWindowHeight; }
     SDL_Renderer* SDL_Framework::renderer() { return mRenderer; }
 
-    SDL_Keycode PressedKey()
-    {
-        return mPressedKey;
-    }
+    SDL_Keycode PressedKey() { return mPressedKey; }
 
-    SDL_Point MousePosition()
-    {
-        return mMousePosition;
-    }
+    SDL_Point MousePosition() { return mMousePosition; }
 
-    bool IsMouseButtonPressed(enum MOUSE_BUTTONS mouse_button)
-    {
-        return mMouseButtonStates[mouse_button];
-    };
+    bool IsMouseButtonPressed(enum MOUSE_BUTTONS mouse_button) { return mMouseButtonStates[mouse_button]; }
 
-    bool init(const char* title, int x, int y, int width, int height, int flags)
+    bool Init(const char* title, int x, int y, int width, int height, int flags)
     {
         int result = SDL_Init(SDL_INIT_EVERYTHING);
         if (result != 0)
@@ -177,7 +168,7 @@ public:
             Uint32 elapsed_time = frame_start - start_time;
             start_time = frame_start;
 
-            handle_events();
+            HandleEvents();
             UserRender(elapsed_time);
             SDL_RenderPresent(renderer());
 
@@ -193,9 +184,8 @@ public:
             }
 
             Uint32 frame_time = SDL_GetTicks() - frame_start;
-            if (frame_time < DELAY_TIME)
-            {
-                SDL_Delay((int)(DELAY_TIME - frame_time));
+            if (frame_time < MAX_FRAME_TIME) {
+                SDL_Delay((int)(MAX_FRAME_TIME - frame_time));
             }
         }
 
@@ -211,20 +201,16 @@ public:
         int radius2 = radius * radius;
 
         SDL_SetRenderDrawColor(mRenderer, color.r, color.g, color.b, color.a);
-        for (int w = 0; w <= radius * 2; w++)
-        {
-            for (int h = 0; h <= radius * 2; h++)
-            {
+        for (int w = 0; w <= radius * 2; w++) {
+            for (int h = 0; h <= radius * 2; h++) {
                 int dx = radius - w;
                 int dy = radius - h;
                 int pos = dx * dx + dy * dy;
-                if (fill && pos <= radius2)
-                {
+                if (fill && pos <= radius2) {
                     SDL_RenderDrawPoint(mRenderer, center.x + dx, center.y + dy);
                 }
                 int diff = pos - radius2;
-                if (!fill && abs(diff) <= 10)
-                {
+                if (!fill && abs(diff) <= 10) {
                     SDL_RenderDrawPoint(mRenderer, center.x + dx, center.y + dy);
                 }
             }
@@ -232,15 +218,13 @@ public:
     }
 
 private:
-    void handle_events()
+    void HandleEvents()
     {
         mPressedKey = 0;
 
         SDL_Event event;
-        while (SDL_PollEvent(&event))
-        {
-            switch (event.type)
-            {
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
             case SDL_KEYDOWN:
                 mPressedKey = event.key.keysym.sym;
                 break;
@@ -252,34 +236,14 @@ private:
                 mMousePosition.y = event.motion.y;
                 break;
             case SDL_MOUSEBUTTONDOWN:
-                if (event.button.button == SDL_BUTTON_LEFT)
-                {
-                    mMouseButtonStates[LEFT] = true;
-                }
-                if (event.button.button == SDL_BUTTON_MIDDLE)
-                {
-                    mMouseButtonStates[MIDDLE] = true;
-                }
-                if (event.button.button == SDL_BUTTON_RIGHT)
-                {
-                    mMouseButtonStates[RIGHT] = true;
-                }
+                if (event.button.button == SDL_BUTTON_LEFT) mMouseButtonStates[LEFT] = true;
+                if (event.button.button == SDL_BUTTON_MIDDLE) mMouseButtonStates[MIDDLE] = true;
+                if (event.button.button == SDL_BUTTON_RIGHT) mMouseButtonStates[RIGHT] = true;
                 break;
             case SDL_MOUSEBUTTONUP:
-                if (event.button.button == SDL_BUTTON_LEFT)
-                {
-                    mMouseButtonStates[LEFT] = false;
-                }
-
-                if (event.button.button == SDL_BUTTON_MIDDLE)
-                {
-                    mMouseButtonStates[MIDDLE] = false;
-                }
-
-                if (event.button.button == SDL_BUTTON_RIGHT)
-                {
-                    mMouseButtonStates[RIGHT] = false;
-                }
+                if (event.button.button == SDL_BUTTON_LEFT) mMouseButtonStates[LEFT] = false;
+                if (event.button.button == SDL_BUTTON_MIDDLE) mMouseButtonStates[MIDDLE] = false;
+                if (event.button.button == SDL_BUTTON_RIGHT) mMouseButtonStates[RIGHT] = false;
                 break;
             default:
                 break;
