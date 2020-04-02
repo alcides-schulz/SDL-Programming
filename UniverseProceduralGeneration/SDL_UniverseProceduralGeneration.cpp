@@ -229,7 +229,7 @@ int main(int argc, char* argv[])
 {
     SDL_UniverseProceduralGeneration universe;
 
-    if (universe.init("Universe Procedural Generation", 400, 100, 1200, 800, 0)) {
+    if (universe.Init("Universe Procedural Generation", 400, 100, 1200, 800, 0)) {
         universe.Run();
     }
 
