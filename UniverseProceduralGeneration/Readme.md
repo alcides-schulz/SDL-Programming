@@ -13,4 +13,4 @@ Couple of things I learned in this project:
 
 Special to thanks javidx9 for its chanel: One Lone Coder where this project is based on. It has many interesting and instructive videos about programming.
 
-![alt text](UniverseProceduralGeneration.png "Universe Procedural Generation")
+![alt text](UniverseProceduralGeneration.gif "Universe Procedural Generation")
