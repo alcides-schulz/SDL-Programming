@@ -7,7 +7,7 @@ You can navigate to different sectors by using W, A, S, D keys. Clicking in one 
 
 Couple of things I learned in this project:
 - setup a SDL project and basic functions.
-- SDL does not have a DrawCircle function, so had to research it. Can be improved in terms of performace.
+- SDL does not have a DrawCircle function, so had to research it. Can be improved in terms of performance.
 - SDL also does not have a DrawText function, I have to research and implement something.
 - The Lehmer random number generator (https://en.wikipedia.org/wiki/Lehmer_random_number_generator)
 
